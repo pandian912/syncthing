@@ -154,7 +154,11 @@ func sendJSON(w http.ResponseWriter, jsonObject interface{}) {
 	bs, err := json.Marshal(jsonObject)
 	if err != nil {
 		// This Marshal() can't fail though.
-		bs, _ = json.Marshal(map[string]string{"error": err.Error()})
+		objectStr := fmt.Sprintf("%#v", jsonObject)
+		bs, _ = json.Marshal(map[string]string{
+			"error":  err.Error(),
+			"object": objectStr,
+		})
 		http.Error(w, string(bs), http.StatusInternalServerError)
 		return
 	}
@@ -783,7 +787,12 @@ func (s *apiService) getSystemStatus(w http.ResponseWriter, r *http.Request) {
 		cpusum += p
 	}
 	cpuUsageLock.RUnlock()
-	res["cpuPercent"] = cpusum / float64(len(cpuUsagePercent)) / float64(runtime.NumCPU())
+	x := float64(len(cpuUsagePercent))
+	y := float64(runtime.NumCPU())
+	res["cpuPercent"] = cpusum / x / y
+	res["cpuSum"] = cpusum
+	res["cpuUsage"] = x
+	res["cpuNum"] = y
 	res["pathSeparator"] = string(filepath.Separator)
 	res["uptime"] = int(time.Since(startTime).Seconds())
 	res["startTime"] = startTime

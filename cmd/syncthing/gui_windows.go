@@ -9,6 +9,8 @@
 package main
 
 import (
+	"fmt"
+	"math"
 	"syscall"
 	"time"
 )
@@ -42,11 +44,18 @@ func trackCPUUsage() {
 
 		curTime := time.Now().UnixNano()
 		timeDiff := curTime - prevTime
+		if timeDiff == 0 {
+			panic("Timediff zero")
+		}
 		curUsage := ktime.Nanoseconds() + utime.Nanoseconds()
 		usageDiff := curUsage - prevUsage
+		value := 100 * float64(usageDiff) / float64(timeDiff)
+		if math.IsNaN(value) {
+			panic(fmt.Sprint("Values:", curUsage, prevUsage, curTime, prevTime))
+		}
 		cpuUsageLock.Lock()
 		copy(cpuUsagePercent[1:], cpuUsagePercent[0:])
-		cpuUsagePercent[0] = 100 * float64(usageDiff) / float64(timeDiff)
+		cpuUsagePercent[0] = value
 		cpuUsageLock.Unlock()
 		prevTime = curTime
 		prevUsage = curUsage
